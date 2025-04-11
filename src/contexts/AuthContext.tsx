@@ -195,17 +195,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    try {
-      const refreshToken = getRefreshToken();
-      if (refreshToken) {
-        await authApi.logout();
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      clearTokens();
-      if (isMounted) setAuthState(defaultAuthState);
-    }
+    clearTokens();
+    if (isMounted) setAuthState(defaultAuthState);
   };
 
   const isAdmin = () => {

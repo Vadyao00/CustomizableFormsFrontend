@@ -62,34 +62,55 @@ const CommentSection: React.FC<CommentSectionProps> = ({ templateId }) => {
   }, [templateId]);
   
   useEffect(() => {
+    let isMounted = true;
+    
     const setupSignalR = async () => {
-      await signalR.startConnection();
-      await signalR.joinTemplateGroup(templateId);
-      
-      signalR.onReceiveComment((comment: Comment) => {
-        setComments(prevComments => [...prevComments, comment]);
-        scrollToBottom();
-      });
-      
-      signalR.onUpdateComment((comment: Comment) => {
-        setComments(prevComments => 
-          prevComments.map(c => c.id === comment.id ? comment : c)
-        );
-      });
-      
-      signalR.onDeleteComment((commentId: string) => {
-        setComments(prevComments => 
-          prevComments.filter(c => c.id !== commentId)
-        );
-      });
+      try {
+        const connected = await signalR.startConnection();
+        
+        if (connected && isMounted) {
+          await signalR.joinTemplateGroup(templateId);
+          
+          signalR.onReceiveComment((comment: Comment) => {
+            if (isMounted) {
+              setComments(prevComments => [...prevComments, comment]);
+              scrollToBottom();
+            }
+          });
+          
+          signalR.onUpdateComment((comment: Comment) => {
+            if (isMounted) {
+              setComments(prevComments => 
+                prevComments.map(c => c.id === comment.id ? comment : c)
+              );
+            }
+          });
+          
+          signalR.onDeleteComment((commentId: string) => {
+            if (isMounted) {
+              setComments(prevComments => 
+                prevComments.filter(c => c.id !== commentId)
+              );
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Error setting up SignalR:', err);
+      }
     };
     
     setupSignalR();
     
     return () => {
-      signalR.leaveTemplateGroup(templateId);
+      isMounted = false;
+      
+      if (templateId) {
+        signalR.leaveTemplateGroup(templateId).catch(err => {
+          console.error('Error leaving template group in CommentSection:', err);
+        });
+      }
+      
       signalR.removeAllListeners();
-      signalR.stopConnection();
     };
   }, [templateId]);
   

@@ -19,7 +19,8 @@
       "name": "Name",
       "confirmPassword": "Confirm Password",
       "noAccount": "No account",
-      "alreadyHaveAccount": "Already have account"
+      "alreadyHaveAccount": "Already have account",
+      "or": "or"
     },
     "templates": {
       "popular": "Popular Templates",
@@ -56,7 +57,8 @@
       "templates": "Templates",
       "selectAll": "Select all",
       "selected": "selected",
-      "save": "Save"
+      "save": "Save",
+      "notFound": "Template not found"
     },
     "questions": {
       "add": "Add Question",
@@ -72,7 +74,8 @@
         "integer": "Number",
         "checkbox": "Checkbox"
       },
-      "empty": "Empty"
+      "empty": "Empty",
+      "hideInResults": "Hide in Results"
     },
     "forms": {
       "submit": "Submit Form",
@@ -80,13 +83,18 @@
       "delete": "Delete Form",
       "submittedAt": "Submitted",
       "noSubmittedForms": "No froms submitted",
-      "fetchError": "Error while fetching forms"
+      "fetchError": "Error while fetching forms",
+      "my": "My forms",
+      "submittedByMe": "Submitted by me",
+      "submitError": "Error while submitting form",
+      "step": "Step"
     },
     "comments": {
       "add": "Add Comment",
       "edit": "Edit Comment",
       "delete": "Delete Comment",
-      "placeholder": "Write a comment..."
+      "placeholder": "Write a comment...",
+      "toLeaveComment": "to leave comments"
     },
     "admin": {
       "users": "Users",
@@ -154,7 +162,8 @@
       "templates": "Templates",
       "selectedTag": "Selected tag",
       "noTemplates": "There are no templates for the given tag",
-      "tryDifferentTag": "Try another tag"
+      "tryDifferentTag": "Try another tag",
+      "foundTemplates": "Found templates"
     },
     "table": {
       "rowsPerPage": "Rows per page"
@@ -166,5 +175,11 @@
       "roles": "Roles",
       "active": "Active",
       "blocked": "Blocked"
+    },
+    "tooltip": {
+      "unlike": "Unlike",
+      "like": "Like",
+      "comments": "Comments",
+      "forms": "Forms"
     }
   }

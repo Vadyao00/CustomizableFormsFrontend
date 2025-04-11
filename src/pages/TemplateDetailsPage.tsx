@@ -22,8 +22,6 @@ import {
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -32,12 +30,12 @@ import dayjs from 'dayjs';
 import ReactMarkdown from 'react-markdown';
 import { Template, Question, QuestionType } from '../types';
 import * as templatesApi from '../api/templates';
-import * as likesApi from '../api/likes';
 import { useAuth } from '../contexts/AuthContext';
 import QuestionList from '../components/questions/QuestionList';
 import CommentSection from '../components/comments/CommentSection';
 import FormList from '../components/forms/FormList';
 import TemplateResultsView from '../components/templates/TemplateResultsView';
+import LikeButton from '../components/likes/LikeButton';
 import * as signalR from '../api/signalR';
 
 interface TabPanelProps {
@@ -65,8 +63,6 @@ const TemplateDetailsPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   useEffect(() => {
@@ -83,13 +79,6 @@ const TemplateDetailsPage: React.FC = () => {
         
         setTemplate(templateData);
         setQuestions(questionsData);
-        setLikesCount(templateData.likesCount);
-        
-        if (authState.isAuthenticated) {
-          const hasLiked = await likesApi.getLikeStatus(id);
-          setLiked(hasLiked);
-        }
-        
         setError(null);
       } catch (err) {
         console.error('Error fetching template details:', err);
@@ -100,22 +89,36 @@ const TemplateDetailsPage: React.FC = () => {
     };
     
     fetchTemplateDetails();
+  }, [id, t]);
+  
+  useEffect(() => {
+    if (!id) return;
     
+    let isComponentMounted = true;
+  
     const setupSignalR = async () => {
-      await signalR.startConnection();
-      await signalR.joinTemplateGroup(id);
-      
-      signalR.onUpdateLikes((count: number) => {
-        setLikesCount(count);
-      });
+      try {
+        const connected = await signalR.startConnection();
+        
+        if (connected && isComponentMounted) {
+          await signalR.joinTemplateGroup(id);
+        }
+      } catch (error) {
+        console.error('Error setting up SignalR:', error);
+      }
     };
     
     setupSignalR();
     
     return () => {
-      signalR.leaveTemplateGroup(id);
+      isComponentMounted = false;
+      if (id) {
+        signalR.leaveTemplateGroup(id).catch(err => {
+          console.error('Error leaving template group:', err);
+        });
+      }
     };
-  }, [id, authState.isAuthenticated, t]);
+  }, [id]);
   
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -138,27 +141,6 @@ const TemplateDetailsPage: React.FC = () => {
       setError(t('templates.deleteError'));
     } finally {
       setDeleteDialogOpen(false);
-    }
-  };
-  
-  const handleLikeToggle = async () => {
-    if (!id || !authState.isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      if (liked) {
-        await likesApi.unlikeTemplate(id);
-        setLiked(false);
-        setLikesCount(prev => prev - 1);
-      } else {
-        await likesApi.likeTemplate(id);
-        setLiked(true);
-        setLikesCount(prev => prev + 1);
-      }
-    } catch (err) {
-      console.error('Error toggling like:', err);
     }
   };
   
@@ -225,17 +207,10 @@ const TemplateDetailsPage: React.FC = () => {
             </Box>
             
             <Box display="flex" alignItems="center" gap={2} mb={3}>
-              <Box display="flex" alignItems="center">
-                <IconButton
-                  color={liked ? 'error' : 'default'}
-                  onClick={handleLikeToggle}
-                >
-                  {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                </IconButton>
-                <Typography variant="body2" color="text.secondary">
-                  {likesCount}
-                </Typography>
-              </Box>
+              <LikeButton 
+                templateId={id!} 
+                size="medium"
+              />
               
               <Box display="flex" alignItems="center" gap={0.5}>
                 <Avatar

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -11,8 +11,6 @@ import {
   CardActionArea
 } from '@mui/material';
 import { 
-  Favorite as FavoriteIcon,
-  FavoriteBorder as FavoriteBorderIcon,
   Comment as CommentIcon,
   Description as DescriptionIcon
 } from '@mui/icons-material';
@@ -20,8 +18,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { Template } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
-import * as likesApi from '../../api/likes';
+import * as commentsApi from '../../api/comments';
+import LikeButton from '../likes/LikeButton';
 
 interface TemplateCardProps {
   template: Template;
@@ -31,54 +29,29 @@ interface TemplateCardProps {
 const TemplateCard: React.FC<TemplateCardProps> = ({ template, onLike }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { authState } = useAuth();
-  const [liked, setLiked] = React.useState(false);
-  const [likesCount, setLikesCount] = React.useState(template.likesCount);
+  const [commentsCount, setCommentsCount] = useState(0);
   
-  React.useEffect(() => {
-    if (authState.isAuthenticated) {
-      const checkLikeStatus = async () => {
-        try {
-          const hasLiked = await likesApi.getLikeStatus(template.id);
-          setLiked(hasLiked);
-        } catch (error) {
-          console.error('Error checking like status:', error);
-        }
-      };
-      
-      checkLikeStatus();
-    }
-  }, [template.id, authState.isAuthenticated]);
-  
-  const handleLike = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if (!authState.isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      if (liked) {
-        await likesApi.unlikeTemplate(template.id);
-        setLiked(false);
-        setLikesCount(prev => prev - 1);
-      } else {
-        await likesApi.likeTemplate(template.id);
-        setLiked(true);
-        setLikesCount(prev => prev + 1);
+  useEffect(() => {
+    const fetchCommentsCount = async () => {
+      try {
+        const comments = await commentsApi.getTemplateComments(template.id);
+        setCommentsCount(comments.length);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
       }
-      
-      if (onLike) {
-        onLike(template.id);
-      }
-    } catch (error) {
-      console.error('Error liking template:', error);
-    }
-  };
+    };
+    
+    fetchCommentsCount();
+  }, [template.id]);
   
   const handleCardClick = () => {
     navigate(`/templates/${template.id}`);
+  };
+  
+  const handleLikeToggle = () => {
+    if (onLike) {
+      onLike(template.id);
+    }
   };
   
   return (
@@ -143,27 +116,25 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onLike }) => {
       
       <Box display="flex" justifyContent="space-between" alignItems="center" px={2} py={1}>
         <Box display="flex" alignItems="center">
-          <Tooltip title={liked ? t('unlike') : t('like')}>
-            <IconButton size="small" onClick={handleLike} color={liked ? 'error' : 'default'}>
-              {liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-            </IconButton>
-          </Tooltip>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-            {likesCount}
-          </Typography>
+          <LikeButton 
+            templateId={template.id}
+            onLikeToggle={handleLikeToggle}
+          />
           
-          <Tooltip title={t('comments')}>
-            <IconButton size="small" sx={{ ml: 1 }}>
-              <CommentIcon />
-            </IconButton>
-          </Tooltip>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-            {template.commentsCount}
-          </Typography>
+          <Box sx={{ ml: 2, display: 'flex', alignItems: 'center' }}>
+            <Tooltip title={t('tooltip.comments')}>
+              <IconButton size="small">
+                <CommentIcon />
+              </IconButton>
+            </Tooltip>
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+              {commentsCount}
+            </Typography>
+          </Box>
         </Box>
         
         <Box display="flex" alignItems="center">
-          <Tooltip title={t('forms')}>
+          <Tooltip title={t('tooltip.forms')}>
             <IconButton size="small">
               <DescriptionIcon />
             </IconButton>
